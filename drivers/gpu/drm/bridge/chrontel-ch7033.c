@@ -556,9 +556,30 @@ static void ch7035_audio_shutdown(struct device *dev, void *data)
 	
 }
 
+static int ch7035_audio_i2s_get_dai_id(struct snd_soc_component *component,
+				  struct device_node *endpoint)
+{
+	struct of_endpoint of_ep;
+	int ret;
+
+	ret = of_graph_parse_endpoint(endpoint, &of_ep);
+	if (ret < 0)
+		return ret;
+
+	/*
+	 * HDMI sound should be located as reg = <2>
+	 * Then, it is sound port 0
+	 */
+	if (of_ep.port == 2)
+		return 0;
+
+	return -EINVAL;
+}
+
 static const struct hdmi_codec_ops audio_codec_ops = {
 	.hw_params = ch7035_audio_hw_params,
 	.audio_shutdown = ch7035_audio_shutdown,
+	.get_dai_id	= ch7035_audio_i2s_get_dai_id
 };
 
 static int ch7035_audio_codec_init(struct ch7033_priv *priv,
@@ -623,9 +644,14 @@ static int ch7033_probe(struct i2c_client *client,
 	priv->bridge.of_node = dev->of_node;
 	drm_bridge_add(&priv->bridge);
 
-	ch7035_audio_codec_init(priv, dev);
+	ret = ch7035_audio_codec_init(priv, dev);
+	if (ret < 0) {
+		dev_err(dev, "CH7033 audio codec initialization failed: %d\n", ret);
+	} else {
+		dev_info(dev, "CH7033 audio codec initialized.");
+	}
 
-	dev_info(dev, "Chrontel CH7033 Video Encoder\n");
+	dev_info(dev, "Chrontel CH7033 Video Encoder initialized.\n");
 
 	return 0;
 }

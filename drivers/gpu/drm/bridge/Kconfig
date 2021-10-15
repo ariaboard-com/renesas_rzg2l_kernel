@@ -29,6 +29,7 @@ config DRM_CHRONTEL_CH7033
 	tristate "Chrontel CH7033 Video Encoder"
 	depends on OF
 	select DRM_KMS_HELPER
+	select SND_SOC_HDMI_CODEC if SND_SOC
 	help
 	  Enable support for the Chrontel CH7033 VGA/DVI/HDMI Encoder, as
 	  found in the Dell Wyse 3020 thin client.

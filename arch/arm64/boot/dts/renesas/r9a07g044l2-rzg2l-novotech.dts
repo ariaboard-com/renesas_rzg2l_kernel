@@ -12,23 +12,8 @@
 
 #include "r9a07g044l2.dtsi"
 
-/*
- * SSI-WM8978
- *
- * This command is required when Playback/Capture
- *
- *	amixer cset name='Left Input Mixer L2 Switch' on
- *	amixer cset name='Right Input Mixer R2 Switch' on
- *	amixer cset name='Headphone Playback Volume' 100
- *	amixer cset name='Input PGA Volume' 100
- *	amixer cset name='L2/R2 Boost Volume' 100
- *
- * ADV7535 Audio playback
- *	aplay -D hw:1,0 xxx.wav
- */
-
 / {
-	model = "RZG2L Evaluation Board Kit (Discrete Power System Ver.) (Dual Cortex-A55)";
+	model = "RZG2L Novotech Board (Dual Cortex-A55)";
 	compatible = "renesas,r9a07g044l2-smarc", "renesas,r9a07g044l2";
 
 	aliases {
@@ -99,15 +84,14 @@
 			reusable;
 			reg = <0x0 0x58000000 0x0 0x10000000>;
 		};
-/*		
+				
 		mmp_reserved: linux,multimedia {
 			compatible = "shared-dma-pool";
 			reusable;
 			reg = <0x00000000 0x68000000 0x0 0x8000000>;
 		};
-*/
 	};
-/*	
+
 	mmngr {
 		compatible = "renesas,mmngr";
 		memory-region = <&mmp_reserved>;
@@ -116,7 +100,6 @@
 	mmngrbuf {
 		compatible = "renesas,mmngrbuf";
 	};
-*/
 
 	vbus0_usb2: regulator-vbus0-usb2 {
 		compatible = "regulator-fixed";
@@ -133,24 +116,28 @@
 		simple-audio-card,frame-master = <&cpu_dai>;
 		simple-audio-card,mclk-fs = <256>;
 
-		simple-audio-card,widgets = "Microphone", "Microphone Jack";
+		simple-audio-card,widgets =
+			"Headphone", "Headphone Jack",
+			"Line", "Line In";
 		simple-audio-card,routing =
-			    "L2", "Mic Bias",
-			    "R2", "Mic Bias",
-			    "Mic Bias", "Microphone Jack";
+			"Headphone Jack",	"HPLOUT",
+			"Headphone Jack",	"HPROUT",
+			"LINE1L",		"Line In",
+			"LINE1R",		"Line In";
 
 		cpu_dai: simple-audio-card,cpu {
 			sound-dai = <&ssi0>;
 		};
 
 		codec_dai: simple-audio-card,codec {
-			sound-dai = <&wm8978>;
-			clocks = <&versa3 3>;
+			sound-dai = <&tlv320aic3106>;
+			clocks = <&versa3 0>;
 		};
 	};
 
 	sound_card {
 		compatible = "audio-graph-card";
+		mclk-fs = <256>;
 		dais = <&ssi1>;
 	};
 
@@ -214,26 +201,21 @@
 };
 
 &adc {
-	pinctrl-0 = <&adc_pins>;
-	pinctrl-names = "default";
-	status = "okay";
+	status = "disabled";
 };
 
 &can {
-/*
-	pinctrl-0 = <&canfd0_pins &canfd1_pins>;
+	pinctrl-0 = <&can1_pins>;
 	pinctrl-names = "default";
 	status = "okay";
 
 	channel0 {
-		status = "okay";
+		status = "disabled";
 	};
 
 	channel1 {
 		status = "okay";
 	};
-*/
-	status = "disabled";
 };
 
 &dsi0 {
@@ -338,12 +320,9 @@
 	ch7033: ch7033@76 {
 		compatible = "chrontel,ch7033";
 		reg = <0x76>;
-
-/*
+		
 		#sound-dai-cells = <0>;
-		audio-ports = <2 0x03>;
-		clocks = <&rcar_sound 1>;
-*/
+		clocks = <&versa3 3>;
 
 		ports {
 			#address-cells = <1>;
@@ -360,6 +339,13 @@
 				reg = <1>;
 				ch7033_out: endpoint {
 					remote-endpoint = <&hdmi_con_out>;
+				};
+			};
+			
+			port@2 {
+				reg = <2>;
+				codec_endpoint: endpoint {
+					remote-endpoint = <&i2s2_cpu_endpoint>;
 				};
 			};
 		};
@@ -398,11 +384,19 @@
 		clock-divider-read-only = <1>, <1>, <1>, <1>, <1>;
 		clock-flags = <2176>, <2176>, <2176>, <2052>, <2176>, <2048>;
 	};
-
-	wm8978: codec@1a {
-		compatible = "wlf,wm8978";
+	
+	tlv320aic3106: tlv320aic3106@18 {
 		#sound-dai-cells = <0>;
-		reg = <0x1a>;
+		compatible = "ti,tlv320aic3106";
+		reg = <0x18>;
+		status = "okay";
+		ai3x-micbias-vg = <2>;
+
+		/* Regulators */
+		AVDD-supply = <&reg_3p3v>;
+		IOVDD-supply = <&reg_3p3v>;
+		DRVDD-supply = <&reg_3p3v>;
+		DVDD-supply = <&reg_1p8v>;
 	};
 };
 
@@ -419,36 +413,10 @@
 	pinctrl-0 = <&sound_clk_pins>;
 	pinctrl-names = "default";
 
-	adc_pins: adc {
-		groups = "adc_d";
-		function = "adc";
-	};
-
-/*
-	canfd0_en {
-		gpio-hog;
-		gpios = <RZG2L_GPIO(42, 2) GPIO_ACTIVE_LOW>;
-		output-high;
-		line-name = "canfd0_en";
-	};
-
-	canfd1_en {
-		gpio-hog;
-		gpios = <RZG2L_GPIO(42, 3) GPIO_ACTIVE_LOW>;
-		output-high;
-		line-name = "canfd1_en";
-	};
-
-	canfd0_pins: canfd0 {
-		groups = "can0_data_a";
-		function = "can0";
-	};
-
-	canfd1_pins: canfd1 {
-		groups = "can1_data_a";
+	can1_pins: can1 {
+		groups = "can1_tx_d", "can1_rx_d";
 		function = "can1";
 	};
-*/
 
 	eth0_pins: eth0 {
 		groups = "eth0_link", "eth0_mdio", "eth0_mii";
@@ -571,9 +539,9 @@
 		function = "usb1";
 	};
 
-	spi1_pins: rspi1 {
-		groups = "rspi1_clk_b", "rspi1_data_b", "rspi1_ssl_b";
-		function = "rspi1";
+	spi0_pins: rspi0 {
+		groups = "rspi0_clk_c", "rspi0_data_c", "rspi0_ssl_c";
+		function = "rspi0";
 	};
 	
 	du_pins: du {
@@ -661,7 +629,6 @@
 	dma-names = "tx", "rx";
 	status = "okay";
 
-/*
 	ports {
 		i2s2_port0: port@0 {
 			i2s2_cpu_endpoint: endpoint {
@@ -670,7 +637,6 @@
 			};
 		};
 	};
-*/
 };
 
 &usb2_phy0 {
@@ -707,8 +673,8 @@
 	timeout-sec = <60>;
 };
 
-&rspi1 {
-	pinctrl-0 = <&spi1_pins>;
+&rspi0 {
+	pinctrl-0 = <&spi0_pins>;
 	pinctrl-names = "default";
 	status = "okay";
 	dmas = <&dma0 0xa601>,
