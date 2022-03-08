@@ -100,6 +100,10 @@
 	mmngrbuf {
 		compatible = "renesas,mmngrbuf";
 	};
+	
+	vspm_if {
+		compatible = "renesas,vspm_if";
+	};
 
 	vbus0_usb2: regulator-vbus0-usb2 {
 		compatible = "regulator-fixed";
@@ -163,10 +167,11 @@
 		regulator-always-on;
 	};
 
-/* Read Only File system in QSPI Example */
-/* File System in XIP QSPI */
-/* Remember, we'll be in QSPI XIP mode at this point */
-/* Requires CONFIG_MTD_ROM=y */
+	/* Read Only File system in QSPI Example */
+	/* File System in XIP QSPI */
+	/* Remember, we'll be in QSPI XIP mode at this point */
+	/* Requires CONFIG_MTD_ROM=y */
+	
 	qspi@20000000 {
 		compatible = "mtd-rom";
 		//probe-type = "map_rom";
