@@ -4202,8 +4202,8 @@ CONFIG_SND_SOC=y
 # SoC Audio support for Renesas SoCs
 #
 # CONFIG_SND_SOC_SH4_FSI is not set
-CONFIG_SND_SOC_RCAR=m
-# CONFIG_SND_SOC_RZ is not set
+CONFIG_SND_SOC_RCAR=y
+CONFIG_SND_SOC_RZ=y
 # end of SoC Audio support for Renesas SoCs
 
 # CONFIG_SND_SOC_SOF_TOPLEVEL is not set
