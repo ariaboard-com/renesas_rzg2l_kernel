@@ -24,6 +24,8 @@
 		i2c0 = &i2c0;
 		i2c1 = &i2c1;
 		serial0 = &scif0;
+		mmc0 = &sdhi0;
+		mmc1 = &sdhi1;
 #if !(SW_ET0_EN_N)
 		ethernet0 = &eth0;
 #endif
@@ -249,7 +251,7 @@
 		txd3-skew-psec = <0>;
 
 		interrupt-parent = <&pinctrl>;
-		interrupts = <RZG2L_GPIO(5, 1) IRQ_TYPE_EDGE_FALLING>;
+		interrupts = <RZG2L_GPIO(5, 1) IRQ_TYPE_LEVEL_LOW>;
 	};
 };
 #endif
@@ -277,7 +279,7 @@
 		txd3-skew-psec = <0>;
 
 		interrupt-parent = <&pinctrl>;
-		interrupts = <RZG2L_GPIO(18, 5) IRQ_TYPE_EDGE_FALLING>;
+		interrupts = <RZG2L_GPIO(18, 5) IRQ_TYPE_LEVEL_LOW>;
 	};
 };
 
@@ -578,39 +580,53 @@
 		pinmux = <RZG2L_PORT_PINMUX(4, 0, 2)>, /* CK */
 			 <RZG2L_PORT_PINMUX(4, 1, 2)>, /* MOSI */
 			 <RZG2L_PORT_PINMUX(4, 2, 2)>, /* MISO */
-			 <RZG2L_PORT_PINMUX(4, 3, 1)>; /* SSL */
+			 <RZG2L_PORT_PINMUX(4, 3, 2)>; /* SSL */
 	};
 #endif
 
 	du_pins: du {
-		pinmux = <RZG2L_PORT_PINMUX(11, 2, 6)>,
-			 <RZG2L_PORT_PINMUX(13, 1, 6)>,
-			 <RZG2L_PORT_PINMUX(13, 0, 6)>,
-			 <RZG2L_PORT_PINMUX(13, 4, 6)>,
-			 <RZG2L_PORT_PINMUX(13, 3, 6)>,
-			 <RZG2L_PORT_PINMUX(12, 1, 6)>,
-			 <RZG2L_PORT_PINMUX(13, 2, 6)>,
-			 <RZG2L_PORT_PINMUX(14, 0, 6)>,
-			 <RZG2L_PORT_PINMUX(14, 2, 6)>,
-			 <RZG2L_PORT_PINMUX(14, 1, 6)>,
-			 <RZG2L_PORT_PINMUX(16, 0, 6)>,
-			 <RZG2L_PORT_PINMUX(15, 0, 6)>,
-			 <RZG2L_PORT_PINMUX(16, 1, 6)>,
-			 <RZG2L_PORT_PINMUX(15, 1, 6)>,
-			 <RZG2L_PORT_PINMUX(15, 3, 6)>,
-			 <RZG2L_PORT_PINMUX(18, 0, 6)>,
-			 <RZG2L_PORT_PINMUX(15, 2, 6)>,
-			 <RZG2L_PORT_PINMUX(17, 0, 6)>,
-			 <RZG2L_PORT_PINMUX(17, 2, 6)>,
-			 <RZG2L_PORT_PINMUX(17, 1, 6)>,
-			 <RZG2L_PORT_PINMUX(18, 1, 6)>,
-			 <RZG2L_PORT_PINMUX(18, 2, 6)>,
-			 <RZG2L_PORT_PINMUX(17, 3, 6)>,
-			 <RZG2L_PORT_PINMUX(18, 3, 6)>,
-			 <RZG2L_PORT_PINMUX(11, 0, 6)>, /* HSYNC */
-			 <RZG2L_PORT_PINMUX(12, 0, 6)>, /* VSYNC */
-			 <RZG2L_PORT_PINMUX(11, 1, 6)>, /* DE */
-			 <RZG2L_PORT_PINMUX(11, 3, 6)>; /* CLK */
+		data {
+			pinmux = <RZG2L_PORT_PINMUX(11, 2, 6)>,
+				 <RZG2L_PORT_PINMUX(13, 1, 6)>,
+				 <RZG2L_PORT_PINMUX(13, 0, 6)>,
+				 <RZG2L_PORT_PINMUX(13, 4, 6)>,
+				 <RZG2L_PORT_PINMUX(13, 3, 6)>,
+				 <RZG2L_PORT_PINMUX(12, 1, 6)>,
+				 <RZG2L_PORT_PINMUX(13, 2, 6)>,
+				 <RZG2L_PORT_PINMUX(14, 0, 6)>,
+				 <RZG2L_PORT_PINMUX(14, 2, 6)>,
+				 <RZG2L_PORT_PINMUX(14, 1, 6)>,
+				 <RZG2L_PORT_PINMUX(16, 0, 6)>,
+				 <RZG2L_PORT_PINMUX(15, 0, 6)>,
+				 <RZG2L_PORT_PINMUX(16, 1, 6)>,
+				 <RZG2L_PORT_PINMUX(15, 1, 6)>,
+				 <RZG2L_PORT_PINMUX(15, 3, 6)>,
+				 <RZG2L_PORT_PINMUX(18, 0, 6)>,
+				 <RZG2L_PORT_PINMUX(15, 2, 6)>,
+				 <RZG2L_PORT_PINMUX(17, 0, 6)>,
+				 <RZG2L_PORT_PINMUX(17, 2, 6)>,
+				 <RZG2L_PORT_PINMUX(17, 1, 6)>,
+				 <RZG2L_PORT_PINMUX(18, 1, 6)>,
+				 <RZG2L_PORT_PINMUX(18, 2, 6)>,
+				 <RZG2L_PORT_PINMUX(17, 3, 6)>,
+				 <RZG2L_PORT_PINMUX(18, 3, 6)>;
+			drive-strength = <2>;
+		};
+
+		sync {
+			pinmux = <RZG2L_PORT_PINMUX(11, 0, 6)>, /* HSYNC */
+				 <RZG2L_PORT_PINMUX(12, 0, 6)>; /* VSYNC */
+			drive-strength = <2>;
+		};
+
+		de {
+			pinmux = <RZG2L_PORT_PINMUX(11, 1, 6)>; /* DE */
+			drive-strength = <2>;
+		};
+
+		clk {
+			pinmux = <RZG2L_PORT_PINMUX(11, 3, 6)>; /* CLK */
+		};
 	};
 };
 

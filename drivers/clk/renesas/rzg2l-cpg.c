@@ -315,13 +315,13 @@ rzg2l_cpg_mux_clk_register(const struct cpg_core_clk *core,
 {
 	const struct clk_hw *clk_hw;
 
-	clk_hw = clk_hw_register_mux(priv->dev, core->name,
-				     core->parent_names, core->num_parents,
-				     core->flag,
-				     base + GET_REG_OFFSET(core->conf),
-				     GET_SHIFT(core->conf),
-				     GET_WIDTH(core->conf),
-				     core->mux_flags, &priv->rmw_lock);
+	clk_hw = devm_clk_hw_register_mux(priv->dev, core->name,
+					  core->parent_names, core->num_parents,
+					  core->flag,
+					  base + GET_REG_OFFSET(core->conf),
+					  GET_SHIFT(core->conf),
+					  GET_WIDTH(core->conf),
+					  core->mux_flags, &priv->rmw_lock);
 	if (IS_ERR(clk_hw))
 		return ERR_CAST(clk_hw);
 
@@ -1129,6 +1129,12 @@ static const struct of_device_id rzg2l_cpg_match[] = {
 	{
 		.compatible = "renesas,r9a07g043-cpg",
 		.data = &r9a07g043_cpg_info,
+	},
+#endif
+#ifdef CONFIG_CLK_R9A07G054
+	{
+		.compatible = "renesas,r9a07g054-cpg",
+		.data = &r9a07g054_cpg_info,
 	},
 #endif
 	{ /* sentinel */ }
