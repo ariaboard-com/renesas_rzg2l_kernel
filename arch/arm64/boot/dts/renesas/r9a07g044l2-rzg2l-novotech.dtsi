@@ -245,11 +245,19 @@
 
 &ehci0 {
 	dr_mode = "otg";
+	memory-region = <&global_cma>;
+
 	status = "okay";
 };
 
 &ehci1 {
+	memory-region = <&global_cma>;
+
 	status = "okay";
+};
+
+&phyrst {
+        status = "okay";
 };
 
 &eth0 {
@@ -390,10 +398,14 @@
 
 &ohci0 {
 	dr_mode = "otg";
+	memory-region = <&global_cma>;
+
 	status = "okay";
 };
 
 &ohci1 {
+	memory-region = <&global_cma>;
+
 	status = "okay";
 };
 
@@ -675,24 +687,16 @@
 };
 
 &ssi0 {
-	pinctrl-0 = <&ssi0_pins>;
+	pinctrl-0 = <&ssi0_pins &sound_clk_pins>;
 	pinctrl-names = "default";
-/*
-	dmas = <&dma0 0x9501>,
-	       <&dma0 0x9502>;
-	dma-names = "tx", "rx";
-*/
+
 	status = "okay";
 };
 
 &ssi1 {
 	pinctrl-0 = <&ssi1_pins>;
 	pinctrl-names = "default";
-/*
-	dmas = <&dma0 0x9601>,
-	       <&dma0 0x9602>;
-	dma-names = "tx", "rx";
-*/
+
 	status = "okay";
 
 	ports {
