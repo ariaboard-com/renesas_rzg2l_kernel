@@ -92,6 +92,7 @@
 #define PFC(n)			(0x0400 + 0x40 + (n) * 4)
 #define PIN(n)			(0x0800 + 0x10 + (n))
 #define IOLH(n)			(0x1000 + (n) * 8)
+#define SR(n)			(0x1400 + (n) * 8)
 #define IEN(n)			(0x1800 + (n) * 8)
 #define ISEL(n)			(0x2C00 + 0x80 + (n) * 8)
 #define PWPR			(0x3014)
@@ -113,6 +114,7 @@
 #define ETH_PVDD_MASK		0x03
 #define PFC_MASK		0x07
 #define IEN_MASK		0x01
+#define SR_MASK			0x01
 #define IOLH_MASK		0x03
 
 #define PM_INPUT		0x1
@@ -722,6 +724,14 @@ static int rzg2l_pinctrl_pinconf_get(struct pinctrl_dev *pctldev,
 		break;
 	}
 
+	case PIN_CONFIG_SLEW_RATE: {
+		if (!(cfg & PIN_CFG_SR))
+			return -EINVAL;
+
+		arg = rzg2l_read_pin_config(pctrl, SR(port_offset), bit, SR_MASK);
+		break;
+	}
+
 	default:
 		return -ENOTSUPP;
 	}
@@ -850,6 +860,18 @@ static int rzg2l_pinctrl_pinconf_set(struct pinctrl_dev *pctldev,
 			break;
 		}
 
+		case PIN_CONFIG_SLEW_RATE: {
+			unsigned int arg =
+					pinconf_to_config_argument(_configs[i]);
+
+			if (!(cfg & PIN_CFG_SR))
+				return -EINVAL;
+
+			rzg2l_rmw_pin_config(pctrl, SR(port_offset),
+					     bit, SR_MASK, !!arg);
+			break;
+		}
+
 		default:
 			return -EOPNOTSUPP;
 		}
@@ -972,7 +994,7 @@ static int rzg2l_gpio_irq_check_tint_slot(struct rzg2l_pinctrl *pctrl,
 	return i;
 }
 
-static void rzg2l_gpio_irq_disable(struct irq_data *d)
+static void rzg2l_gpio_irq_shutdown(struct irq_data *d)
 {
 	struct gpio_chip *chip = irq_data_get_irq_chip_data(d);
 	struct rzg2l_pinctrl *pctrl = gpiochip_get_data(chip);
@@ -1048,6 +1070,7 @@ static void rzg2l_gpio_irq_unmask(struct irq_data *d)
 	u32 tint_slot;
 	unsigned long flags;
 	u32 reg32;
+	u32 irq_type;
 
 	gpioint = rzg2l_gpio_irq_validate_id(pctrl, port, bit);
 	if (gpioint == pctrl->data->ngpioints)
@@ -1059,9 +1082,25 @@ static void rzg2l_gpio_irq_unmask(struct irq_data *d)
 
 	spin_lock_irqsave(&pctrl->lock, flags);
 
+	if (tint_slot > 15) {
+		reg32 = readl(pctrl->base_tint + TITSR1);
+		reg32 = reg32 >> ((tint_slot - 16) * 2);
+		irq_type = reg32 & IRQ_MASK;
+	} else {
+		reg32 = readl(pctrl->base_tint + TITSR0);
+		reg32 = reg32 >> (tint_slot * 2);
+		irq_type = reg32 & IRQ_MASK;
+	}
+
 	reg32 = readl(pctrl->base_tint + TSSR(tint_slot / 4));
 	reg32 |= BIT(7) << (8 * (tint_slot % 4));
 	writel(reg32, pctrl->base_tint + TSSR(tint_slot / 4));
+
+	/* Clear Interrupt status bit to avoid unexpected triggering */
+	if ((irq_type == RISING_EDGE) || (irq_type == FALLING_EDGE)) {
+		reg32 = readl(pctrl->base_tint + TSCR);
+		writel(reg32 & ~BIT(tint_slot), pctrl->base_tint + TSCR);
+	}
 
 	spin_unlock_irqrestore(&pctrl->lock, flags);
 }
@@ -1130,25 +1169,19 @@ static int rzg2l_gpio_irq_set_type(struct irq_data *d, unsigned int type)
 
 	if (tint_slot > 15) {
 		reg32 = readl(pctrl->base_tint + TITSR1);
-		reg32 &= ~(IRQ_MASK << (tint_slot * 2));
-		reg32 |= irq_type << (tint_slot * 2);
+		reg32 &= ~(IRQ_MASK << ((tint_slot - 16) * 2));
+		reg32 |= irq_type << ((tint_slot - 16) * 2);
 		writel(reg32, pctrl->base_tint + TITSR1);
 	} else {
 		reg32 = readl(pctrl->base_tint + TITSR0);
-		reg32 &= ~(IRQ_MASK << ((tint_slot - 16) * 2));
-		reg32 |= irq_type << ((tint_slot - 16) * 2);
+		reg32 &= ~(IRQ_MASK << (tint_slot * 2));
+		reg32 |= irq_type << (tint_slot * 2);
 		writel(reg32, pctrl->base_tint + TITSR0);
 	}
 
 	reg32 = readl(pctrl->base_tint + TSSR(tint_slot / 4));
 	reg32 |= gpioint << (8 * (tint_slot % 4));
 	writel(reg32, pctrl->base_tint + TSSR(tint_slot / 4));
-
-	/* Clear Interrupt status bit to avoid unexpected triggering */
-	if ((irq_type == RISING_EDGE) || (irq_type == FALLING_EDGE)) {
-		reg32 = readl(pctrl->base_tint + TSCR);
-		writel(reg32 & ~BIT(tint_slot), pctrl->base_tint + TSCR);
-	}
 
 	spin_unlock_irqrestore(&pctrl->lock, flags);
 
@@ -1649,7 +1682,7 @@ static int rzg2l_gpio_register(struct rzg2l_pinctrl *pctrl)
 	dev_dbg(pctrl->dev, "Registered gpio controller\n");
 
 	irq_chip->name = dev_name(pctrl->dev);
-	irq_chip->irq_disable = rzg2l_gpio_irq_disable;
+	irq_chip->irq_shutdown = rzg2l_gpio_irq_shutdown;
 	irq_chip->irq_mask = rzg2l_gpio_irq_mask;
 	irq_chip->irq_unmask = rzg2l_gpio_irq_unmask;
 	irq_chip->irq_set_type = rzg2l_gpio_irq_set_type;
