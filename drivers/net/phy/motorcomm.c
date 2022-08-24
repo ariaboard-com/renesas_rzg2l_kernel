@@ -135,10 +135,6 @@ static int yt8512_config_init(struct phy_device *phydev)
 	int ret;
 	int val;
 
-	ret = genphy_config_init(phydev);
-	if (ret < 0)
-		return ret;
-
 	ret = yt8512_clk_init(phydev);
 	if (ret < 0)
 		return ret;
@@ -322,10 +318,6 @@ static int yt8511_config_init(struct phy_device *phydev)
 {
 	int ret;
 
-	ret = genphy_config_init(phydev);
-	if (ret < 0)
-		return ret;
-
 	//ret = yt8511_config_out_125m(phydev->bus, phydev->addr);
 
 	//printk("yzhang..phy config init done, phy_id=%#08x,phyaddr=%d\n",phydev->phy_id, phydev->addr);
@@ -382,9 +374,6 @@ static int yt8521_config_init(struct phy_device *phydev)
 	phydev->irq = PHY_POLL;
 
 	ytphy_write_ext(phydev, 0xa000, 0);
-	ret = genphy_config_init(phydev);
-	if (ret < 0)
-		return ret;
 
 	/* disable auto sleep */
 	val = ytphy_read_ext(phydev, YT8521_EXTREG_SLEEP_CONTROL1);
@@ -663,30 +652,21 @@ static struct phy_driver ytphy_drvs[] = {
 		.name           = "YT8010 Automotive Ethernet",
 		.phy_id_mask    = MOTORCOMM_PHY_ID_MASK,
 		.features       = PHY_BASIC_FEATURES,
-		.flags          = PHY_HAS_INTERRUPT,
 		.config_aneg    = yt8010_config_aneg,
-		.config_init	= genphy_config_init,
 		.read_status    = genphy_read_status,
 	}, {
 		.phy_id		= PHY_ID_YT8510,
 		.name		= "YT8510 100/10Mb Ethernet",
 		.phy_id_mask	= MOTORCOMM_PHY_ID_MASK,
 		.features	= PHY_BASIC_FEATURES,
-		.flags		= PHY_HAS_INTERRUPT,
-		.config_aneg	= genphy_config_aneg,
-		.config_init	= genphy_config_init,
 		.read_status	= genphy_read_status,
 	}, {
 		.phy_id		= PHY_ID_YT8511,
 		.name		= "YT8511 Gigabit Ethernet",
 		.phy_id_mask	= MOTORCOMM_PHY_ID_MASK,
 		.features	= PHY_GBIT_FEATURES,
-		.flags		= PHY_HAS_INTERRUPT,
-		.config_aneg	= genphy_config_aneg,
 #if GMAC_CLOCK_INPUT_NEEDED
 		.config_init	= yt8511_config_init,
-#else
-		.config_init	= genphy_config_init,
 #endif
 		.read_status	= genphy_read_status,
 		.suspend	= genphy_suspend,
@@ -696,8 +676,6 @@ static struct phy_driver ytphy_drvs[] = {
 		.name		= "YT8512 Ethernet",
 		.phy_id_mask	= MOTORCOMM_PHY_ID_MASK,
 		.features	= PHY_BASIC_FEATURES,
-		.flags		= PHY_HAS_INTERRUPT,
-		.config_aneg	= genphy_config_aneg,
 		.config_init	= yt8512_config_init,
 		.read_status	= yt8512_read_status,
 		.suspend	= genphy_suspend,
@@ -707,8 +685,6 @@ static struct phy_driver ytphy_drvs[] = {
 		.name		= "YT8512B Ethernet",
 		.phy_id_mask	= MOTORCOMM_PHY_ID_MASK,
 		.features	= PHY_BASIC_FEATURES,
-		.flags		= PHY_HAS_INTERRUPT,
-		.config_aneg	= genphy_config_aneg,
 		.config_init	= yt8512_config_init,
 		.read_status	= yt8512_read_status,
 		.suspend	= genphy_suspend,
@@ -717,10 +693,8 @@ static struct phy_driver ytphy_drvs[] = {
                 .phy_id         = PHY_ID_YT8521,
                 .name           = "YT8521 Ethernet",
                 .phy_id_mask    = MOTORCOMM_PHY_ID_MASK,
-                .features       = PHY_BASIC_FEATURES | PHY_GBIT_FEATURES,
-                .flags          = PHY_POLL,
+                .features       = PHY_GBIT_FEATURES,
 		.soft_reset	= yt8521_soft_reset,
-                .config_aneg    = genphy_config_aneg,
                 .aneg_done	= yt8521_aneg_done,
                 .config_init    = yt8521_config_init,
                 .read_status    = yt8521_read_status,

@@ -445,6 +445,7 @@ static void panfrost_job_timedout(struct drm_sched_job *sched_job)
 	if (dma_fence_is_signaled(job->done_fence))
 		return;
 
+#if 0
 	dev_err(pfdev->dev, "gpu sched timeout, js=%d, config=0x%x, status=0x%x, head=0x%x, tail=0x%x, sched_job=%p",
 		js,
 		job_read(pfdev, JS_CONFIG(js)),
@@ -452,6 +453,7 @@ static void panfrost_job_timedout(struct drm_sched_job *sched_job)
 		job_read(pfdev, JS_HEAD_LO(js)),
 		job_read(pfdev, JS_TAIL_LO(js)),
 		sched_job);
+#endif
 
 	/* Scheduler is already stopped, nothing to do. */
 	if (!panfrost_scheduler_stop(&pfdev->js->queue[js], sched_job))
@@ -495,11 +497,13 @@ static irqreturn_t panfrost_job_irq_handler(int irq, void *data)
 
 			job_write(pfdev, JS_COMMAND_NEXT(j), JS_COMMAND_NOP);
 
+#if 0
 			dev_err(pfdev->dev, "js fault, js=%d, status=%s, head=0x%x, tail=0x%x",
 				j,
 				panfrost_exception_name(pfdev, job_read(pfdev, JS_STATUS(j))),
 				job_read(pfdev, JS_HEAD_LO(j)),
 				job_read(pfdev, JS_TAIL_LO(j)));
+#endif
 
 			/*
 			 * When the queue is being restarted we don't report
