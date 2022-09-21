@@ -56,12 +56,6 @@
 #define INFO2_DTRANERR1		BIT(17)
 #define INFO2_DTRANERR0		BIT(16)
 
-enum renesas_sdhi_dma_cookie {
-	COOKIE_UNMAPPED,
-	COOKIE_PRE_MAPPED,
-	COOKIE_MAPPED,
-};
-
 /*
  * Specification of this driver:
  * - host->chan_{rx,tx} will be used as a flag of enabling/disabling the dma
@@ -187,7 +181,7 @@ renesas_sdhi_internal_dmac_dataend_dma(struct tmio_mmc_host *host) {
 static void
 renesas_sdhi_internal_dmac_unmap(struct tmio_mmc_host *host,
 				 struct mmc_data *data,
-				 enum renesas_sdhi_dma_cookie cookie)
+				 enum tmio_cookie cookie)
 {
 	bool unmap = cookie == COOKIE_UNMAPPED ? (data->host_cookie != cookie) :
 						 (data->host_cookie == cookie);
@@ -202,7 +196,7 @@ renesas_sdhi_internal_dmac_unmap(struct tmio_mmc_host *host,
 static bool
 renesas_sdhi_internal_dmac_map(struct tmio_mmc_host *host,
 			       struct mmc_data *data,
-			       enum renesas_sdhi_dma_cookie cookie)
+			       enum tmio_cookie cookie)
 {
 	if (data->host_cookie == COOKIE_PRE_MAPPED)
 		return true;
