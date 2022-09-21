@@ -217,6 +217,7 @@ config ARCH_RENESAS
 	bool "Renesas SoC Platforms"
 	select GPIOLIB
 	select PINCTRL
+	select RENESAS_RZG2L_IRQC
 	select SOC_BUS
 	help
 	  This enables support for the ARMv8 based Renesas SoCs.
@@ -250,6 +251,7 @@ config ARCH_STRATIX10
 
 config ARCH_SYNQUACER
 	bool "Socionext SynQuacer SoC Family"
+	select IRQ_FASTEOI_HIERARCHY_HANDLERS
 
 config ARCH_TEGRA
 	bool "NVIDIA Tegra SoC Family"

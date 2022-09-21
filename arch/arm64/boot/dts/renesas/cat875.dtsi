@@ -21,6 +21,8 @@
 	rx-internal-delay-ps = <1800>;
 	tx-internal-delay-ps = <2000>;
 	phy-mode = "rgmii-id";
+	rx-internal-delay-ps = <1800>;
+	tx-internal-delay-ps = <2000>;
 	status = "okay";
 
 	phy0: ethernet-phy@0 {

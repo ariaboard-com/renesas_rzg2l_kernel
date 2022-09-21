@@ -315,13 +315,13 @@ rzg2l_cpg_mux_clk_register(const struct cpg_core_clk *core,
 {
 	const struct clk_hw *clk_hw;
 
-	clk_hw = devm_clk_hw_register_mux(priv->dev, core->name,
-					  core->parent_names, core->num_parents,
-					  core->flag,
-					  base + GET_REG_OFFSET(core->conf),
-					  GET_SHIFT(core->conf),
-					  GET_WIDTH(core->conf),
-					  core->mux_flags, &priv->rmw_lock);
+	clk_hw = clk_hw_register_mux(priv->dev, core->name,
+				     core->parent_names, core->num_parents,
+				     core->flag,
+				     base + GET_REG_OFFSET(core->conf),
+				     GET_SHIFT(core->conf),
+				     GET_WIDTH(core->conf),
+				     core->mux_flags, &priv->rmw_lock);
 	if (IS_ERR(clk_hw))
 		return ERR_CAST(clk_hw);
 
@@ -633,6 +633,7 @@ struct mstp_clock {
 	u16 off;
 	u8 bit;
 	bool enabled;
+	u32 mstop;
 	struct rzg2l_cpg_priv *priv;
 	struct mstp_clock *sibling;
 };
@@ -649,6 +650,7 @@ static int rzg2l_mod_clock_endisable(struct clk_hw *hw, bool enable)
 	unsigned int i;
 	u32 bitmask = BIT(clock->bit);
 	u32 value;
+	u32 mstop_val;
 
 	if (!clock->off) {
 		dev_dbg(dev, "%pC does not support ON/OFF\n",  hw->clk);
@@ -659,11 +661,23 @@ static int rzg2l_mod_clock_endisable(struct clk_hw *hw, bool enable)
 		enable ? "ON" : "OFF");
 	spin_lock_irqsave(&priv->rmw_lock, flags);
 
-	if (enable)
+	if (enable) {
 		value = (bitmask << 16) | bitmask;
-	else
+		mstop_val = MSTOP_BIT(clock->mstop) << 16;
+
+		writel(value, priv->base + CLK_ON_R(reg));
+		if (clock->mstop)
+			writel(mstop_val, priv->base + MSTOP_OFF(clock->mstop));
+
+	} else {
 		value = bitmask << 16;
-	writel(value, priv->base + CLK_ON_R(reg));
+		mstop_val = MSTOP_BIT(clock->mstop) << 16
+			  | MSTOP_BIT(clock->mstop);
+
+		if (clock->mstop)
+			writel(mstop_val, priv->base + MSTOP_OFF(clock->mstop));
+		writel(value, priv->base + CLK_ON_R(reg));
+	}
 
 	spin_unlock_irqrestore(&priv->rmw_lock, flags);
 
@@ -731,6 +745,7 @@ static int rzg2l_mod_clock_is_enabled(struct clk_hw *hw)
 	struct rzg2l_cpg_priv *priv = clock->priv;
 	u32 bitmask = BIT(clock->bit);
 	u32 value;
+	u32 mstop_val;
 
 	if (!clock->off) {
 		dev_dbg(priv->dev, "%pC does not support ON/OFF\n",  hw->clk);
@@ -741,6 +756,19 @@ static int rzg2l_mod_clock_is_enabled(struct clk_hw *hw)
 		return clock->enabled;
 
 	value = readl(priv->base + CLK_MON_R(clock->off));
+
+	if (clock->mstop) {
+		mstop_val = readl(priv->base + MSTOP_OFF(clock->mstop));
+		mstop_val &= MSTOP_BIT(clock->mstop);
+
+		if ((mstop_val == 0) && ((value & bitmask) == 0))
+		{
+			mstop_val = MSTOP_BIT(clock->mstop) << 16
+					| MSTOP_BIT(clock->mstop);
+
+			writel(mstop_val, priv->base + MSTOP_OFF(clock->mstop));
+		}
+	}
 
 	return value & bitmask;
 }
@@ -825,6 +853,7 @@ rzg2l_cpg_register_mod_clk(const struct rzg2l_mod_clk *mod,
 
 	clock->off = mod->off;
 	clock->bit = mod->bit;
+	clock->mstop = mod->mstop;
 	clock->priv = priv;
 	clock->hw.init = &init;
 
@@ -916,7 +945,7 @@ static int rzg2l_cpg_status(struct reset_controller_dev *rcdev,
 	unsigned int reg = info->resets[id].off;
 	u32 bitmask = BIT(info->resets[id].bit);
 
-	return !(readl(priv->base + CLK_MRST_R(reg)) & bitmask);
+	return !!(readl(priv->base + CLK_MRST_R(reg)) & bitmask);
 }
 
 static const struct reset_control_ops rzg2l_cpg_reset_ops = {

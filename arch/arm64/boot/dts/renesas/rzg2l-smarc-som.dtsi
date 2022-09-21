@@ -22,8 +22,34 @@
 
 #define POEGD_SUPPORT           1
 
+/*
+ * MTU3 macros are created to support setting pinctrl and properties in order
+ * to use MTU3 functions. However, their pins on PMODs are mixed with SCIF2
+ * and SPI1, so we must disable these modules to avoid conflict.
+ * - MTU3_PWM_SUPPORT: Disable SPI1 to support PWM of channel3. By default, PWM
+ *   mode 1 of MTIOC3A will be selected.
+ * - MTU3_PWM_COMPLEMENTARY_SELECT: Enable this macro to select complementary PWM
+ *   mode of MTU3 channel3 instead of PWM mode 1. This mode depends on macro
+ *   MTU3_PWM_SUPPORT.
+ * - MTU3_PHASE_COUNTING_SUPPORT: Disable SCIF2 to support phase counting functions.
+ * - MTU3_32BIT_PHASE_COUNTING_SELECT: Select 32-bit phase counting mode.
+ *   This mode depends on macro MTU3_PHASE_COUNTING_SUPPORT.
+ */
+#define MTU3_PWM_SUPPORT			0
+#define MTU3_PWM_COMPLEMENTARY_SELECT		0
+#define MTU3_PHASE_COUNTING_SUPPORT		0
+#define MTU3_32BIT_PHASE_COUNTING_SELECT	0
+
+/*
+ * POE3_SUPPORT is used to enable POE3 to control Hi-Z state of complementary PWM
+ * signals at MTIOC3B-MTIOC3D. Note: This macro must be enabled along with macros
+ * MTU3_PWM_SUPPORT and MTU3_PWM_COMPLEMENTARY_SELECT to fully take effect.
+ */
+#define POE3_SUPPORT				0
+
 / {
 	aliases {
+		i2c3 = &i2c3;
 		ethernet0 = &eth0;
 		ethernet1 = &eth1;
 	};
@@ -294,6 +320,10 @@
 			pins = "SD0_CLK", "SD0_CMD";
 			power-source = <3300>;
 		};
+
+		sd0_mux {
+			pinmux = <RZG2L_PORT_PINMUX(47, 0, 2)>; /* SD0_CD */
+		};
 	};
 
 	sdhi0_pins_uhs: sd0_uhs {
@@ -305,6 +335,10 @@
 		sd0_ctrl_uhs {
 			pins = "SD0_CLK", "SD0_CMD";
 			power-source = <1800>;
+		};
+
+		sd0_mux_uhs {
+			pinmux = <RZG2L_PORT_PINMUX(47, 0, 2)>; /* SD0_CD */
 		};
 	};
 };
@@ -327,12 +361,29 @@
 			#address-cells = <1>;
 			#size-cells = <1>;
 
-			boot@0 {
-				reg = <0x00000000 0x2000000>;
+			partition@0000000 {
+				label = "u-boot";
+				reg = <0x00000000 0x80000>;
 				read-only;
 			};
-			user@2000000 {
-				reg = <0x2000000 0x2000000>;
+			partition@80000 {
+				label = "env";
+				reg = <0x00080000 0x40000>;
+				read-only;
+			};
+			partition@C0000 {
+				label = "dtb";
+				reg = <0x000C0000 0x40000>;
+				read-only;
+			};
+			partition@800000 {
+				label = "rootfs";
+				/* 16MB @ 8MB offset in SPI Flash */
+				reg = <0x00800000 0x01000000>;
+			};
+			partition@2000000 {
+				label = "test-area";
+				reg = <0x02000000 0x00100000>;
 			};
 		};
 	};
@@ -346,7 +397,6 @@
 
 	vmmc-supply = <&reg_3p3v>;
 	vqmmc-supply = <&vccq_sdhi0>;
-	cd-gpios = <&pinctrl RZG2L_GPIO(47, 0) GPIO_ACTIVE_LOW>;
 	bus-width = <4>;
 	sd-uhs-sdr50;
 	sd-uhs-sdr104;
@@ -386,6 +436,18 @@
 };
 
 #if (POEGD_SUPPORT)
+&poega {
+	status = "okay";
+};
+
+&poegb {
+	status = "okay";
+};
+
+&poegc {
+	status = "okay";
+};
+
 &poegd {
 	status = "okay";
 };
@@ -396,7 +458,7 @@
 	pinctrl-names = "default";
 	channel = "both_AB";
 #if (POEGD_SUPPORT)
-	poeg = <&poegd>;
+	poeg = <&poega &poegb &poegc &poegd>;
 #endif
 	status = "okay";
 };
@@ -415,4 +477,26 @@
 
 &ohci1 {
 	memory-region = <&global_cma>;
+};
+
+&i2c3 {
+	pinctrl-0 = <&i2c3_pins>;
+	pinctrl-names = "default";
+	clock-frequency = <400000>;
+
+	status = "okay";
+
+	pmic: raa215300@12 {
+		compatible = "renesas,raa215300";
+		reg = <0x12>;
+
+		rtc-enable;
+	};
+
+	rtc: isl1208@6f {
+		compatible = "isil,isl1208";
+		reg = <0x6f>;
+
+		external-oscillator;
+	};
 };

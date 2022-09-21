@@ -75,7 +75,7 @@
 #endif
 };
 
-#if (SW_SCIF_CAN || SW_RSPI_CAN)
+#if ((SW_SCIF_CAN || SW_RSPI_CAN) && !MTU3_PWM_SUPPORT)
 &canfd {
 	pinctrl-0 = <&can1_pins>;
 	/delete-node/ channel0;
@@ -154,6 +154,18 @@
 #endif
 
 #if (POEGD_SUPPORT)
+&poega {
+	status = "okay";
+};
+
+&poegb {
+	status = "okay";
+};
+
+&poegc {
+	status = "okay";
+};
+
 &poegd {
 	status = "okay";
 };
@@ -165,16 +177,44 @@
 	pinctrl-names = "default";
 	channel = "both_AB";
 #if (POEGD_SUPPORT)
-	poeg = <&poegd>;
+	poeg = <&poega &poegb &poegc &poegd>;
 #endif
 	status = "okay";
 };
 #endif
 
-#if (!SW_RSPI_CAN)
+#if (!SW_RSPI_CAN && !MTU3_PWM_SUPPORT)
 &spi1 {
 	pinctrl-0 = <&spi1_pins>;
 	pinctrl-names = "default";
 	status = "okay";
+};
+#endif
+
+#if (MTU3_PWM_SUPPORT || MTU3_PHASE_COUNTING_SUPPORT)
+&mtu3 {
+	pinctrl-0 = <&mtu3_pins>;
+	pinctrl-names = "default";
+
+#if MTU3_PWM_SUPPORT
+	/* MTU3 PWM functions setting. */
+#if MTU3_PWM_COMPLEMENTARY_SELECT
+	/* Enable PWM complementary for MTIOC3B and MTIOC3D pins. */
+	pwm_complementary = <3 1>;
+#else
+	/* Enable PWM mode 1 out for MTIOC3C pins. */
+	pwm_mode1 = <3 1>;
+#endif
+#endif
+};
+#endif
+
+#if (MTU3_PWM_SUPPORT && MTU3_PWM_COMPLEMENTARY_SELECT && POE3_SUPPORT)
+&poe3 {
+	status = "okay";
+
+	mtu3_ch34 {
+		mtu3_outputs = <0>; /* MTIOC3B-MTIOC3D */
+	};
 };
 #endif

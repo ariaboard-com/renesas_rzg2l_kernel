@@ -245,6 +245,7 @@ static int rzg2l_cru_parallel_init(struct rzg2l_cru_dev *cru)
 {
 	int ret;
 
+	v4l2_async_notifier_init(&cru->notifier);
 	ret = v4l2_async_notifier_parse_fwnode_endpoints_by_port(
 				cru->dev, &cru->notifier,
 				sizeof(struct rzg2l_cru_parallel_entity),
@@ -514,12 +515,6 @@ static int rzg2l_cru_probe(struct platform_device *pdev)
 	irq = platform_get_irq(pdev, 0);
 	if (irq < 0)
 		return irq;
-
-	cru->rstc.cmn_rstb = devm_reset_control_get(&pdev->dev, "cmn_rstb");
-	if (IS_ERR(cru->rstc.cmn_rstb)) {
-		dev_err(&pdev->dev, "failed to get CRU_CMN_RSTB reset\n");
-		return PTR_ERR(cru->rstc.cmn_rstb);
-	}
 
 	cru->rstc.presetn = devm_reset_control_get(&pdev->dev, "presetn");
 	if (IS_ERR(cru->rstc.presetn)) {

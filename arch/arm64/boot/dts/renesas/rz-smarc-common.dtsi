@@ -274,13 +274,13 @@
 
 	vmmc-supply = <&reg_3p3v>;
 	vqmmc-supply = <&vccq_sdhi1>;
-	cd-gpios = <&pinctrl RZG2L_GPIO(19, 0) GPIO_ACTIVE_LOW>;
 	bus-width = <4>;
 	sd-uhs-sdr50;
 	sd-uhs-sdr104;
 	status = "okay";
 };
 
+#if (!MTU3_PWM_SUPPORT)
 &spi1 {
 	pinctrl-0 = <&spi1_pins>;
 	pinctrl-names = "default";
@@ -289,6 +289,7 @@
 
 	status = "okay";
 };
+#endif
 
 &ssi0 {
 	pinctrl-0 = <&ssi0_pins>;

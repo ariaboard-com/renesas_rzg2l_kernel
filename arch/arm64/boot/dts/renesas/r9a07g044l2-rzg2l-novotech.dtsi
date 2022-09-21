@@ -214,6 +214,8 @@
 &canfd {
 	pinctrl-0 = <&can1_pins>;
 	pinctrl-names = "default";
+	renesas,no-can-fd;
+
 	status = "okay";
 
 	channel0 {

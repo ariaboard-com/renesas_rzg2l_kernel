@@ -9,6 +9,8 @@
 #include <linux/clk.h>
 #include <linux/gpio/driver.h>
 #include <linux/io.h>
+#include <linux/interrupt.h>
+#include <linux/irq.h>
 #include <linux/module.h>
 #include <linux/of_device.h>
 #include <linux/pinctrl/pinconf-generic.h>
@@ -16,8 +18,6 @@
 #include <linux/pinctrl/pinctrl.h>
 #include <linux/pinctrl/pinmux.h>
 #include <linux/spinlock.h>
-#include <linux/interrupt.h>
-#include <linux/irq.h>
 
 #include <dt-bindings/pinctrl/rzg2l-pinctrl.h>
 
@@ -47,11 +47,10 @@
 #define PIN_CFG_IO_VMC_QSPI		BIT(7)
 #define PIN_CFG_IO_VMC_ETH0		BIT(8)
 #define PIN_CFG_IO_VMC_ETH1		BIT(9)
+#define PIN_CFG_IO_VMC_ETH		(PIN_CFG_IO_VMC_ETH0 | PIN_CFG_IO_VMC_ETH1)
 #define PIN_CFG_FILONOFF		BIT(10)
 #define PIN_CFG_FILNUM			BIT(11)
 #define PIN_CFG_FILCLKSEL		BIT(12)
-
-#define PIN_CFG_IO_VMC_ETH	(PIN_CFG_IO_VMC_ETH0 | PIN_CFG_IO_VMC_ETH1)
 
 #define RZG2L_MPXED_PIN_FUNCS		(PIN_CFG_IOLH_A | \
 					 PIN_CFG_SR | \
@@ -125,10 +124,10 @@
 #define RZG2L_PIN_ID_TO_PIN(id)		((id) % RZG2L_PINS_PER_PORT)
 
 /* Hardware Registers support GPIO interrupt in IA55 Module */
-#define TSCR	0x0		/* TINT Interrupt Status Control Register */
-#define TITSR0	0x4		/* TINT detection method selection register 0 */
-#define TITSR1	0x8		/* TINT detection method selection register 1 */
-#define TSSR(n)	(0x10 + (n) * 4) /* TINT source selection register */
+#define TSCR		0x0 /* TINT Interrupt Status Control Register */
+#define TITSR0		0x4 /* TINT detection method selection register 0 */
+#define TITSR1		0x8 /* TINT detection method selection register 1 */
+#define TSSR(n)		(0x10 + (n) * 4) /* TINT source selection register */
 
 #define RISING_EDGE	0
 #define FALLING_EDGE	1
@@ -136,10 +135,9 @@
 #define LOW_LEVEL	3
 #define IRQ_MASK	0x3
 
-#define TINT_MAX	32	/* Maximum 32 Interrupts can be supported */
+#define TINT_MAX       32	/* Maximum 32 Interrupts can be supported */
 
 #define RZG2L_PIN_INFO(p, b)	(((p) << 16) | (b))
-
 static const int rzg2l_pin_info[] = {
 	RZG2L_PIN_INFO(0,  0), RZG2L_PIN_INFO(0,  1),
 	RZG2L_PIN_INFO(1,  0), RZG2L_PIN_INFO(1,  1),
@@ -196,7 +194,7 @@ static const int rzg2l_pin_info[] = {
 	RZG2L_PIN_INFO(47, 0), RZG2L_PIN_INFO(47, 1), RZG2L_PIN_INFO(47, 2),
 	RZG2L_PIN_INFO(47, 3),
 	RZG2L_PIN_INFO(48, 0), RZG2L_PIN_INFO(48, 1), RZG2L_PIN_INFO(48, 2),
-	RZG2L_PIN_INFO(48, 3), RZG2L_PIN_INFO(48, 3),
+	RZG2L_PIN_INFO(48, 3), RZG2L_PIN_INFO(48, 4),
 };
 
 static const int rzg2ul_pin_info[] = {
@@ -639,10 +637,10 @@ static int rzg2l_pinctrl_pinconf_get(struct pinctrl_dev *pctldev,
 	enum pin_config_param param = pinconf_to_config_param(*config);
 	const struct pinctrl_pin_desc *pin = &pctrl->desc.pins[_pin];
 	unsigned int *pin_data = pin->drv_data;
-	u32 port_offset;
 	unsigned int arg = 0;
 	unsigned long flags;
 	void __iomem *addr;
+	u32 port_offset;
 	u32 cfg = 0;
 	u8 bit = 0;
 
@@ -658,8 +656,7 @@ static int rzg2l_pinctrl_pinconf_get(struct pinctrl_dev *pctldev,
 		port_offset = RZG2L_PIN_ID_TO_PORT_OFFSET(_pin);
 		bit = RZG2L_PIN_ID_TO_PIN(_pin);
 
-		if (rzg2l_validate_gpio_pin(pctrl, *pin_data,
-					    RZG2L_PIN_ID_TO_PORT(_pin), bit))
+		if (rzg2l_validate_gpio_pin(pctrl, *pin_data, RZG2L_PIN_ID_TO_PORT(_pin), bit))
 			return -EINVAL;
 	}
 
@@ -667,9 +664,7 @@ static int rzg2l_pinctrl_pinconf_get(struct pinctrl_dev *pctldev,
 	case PIN_CONFIG_INPUT_ENABLE:
 		if (!(cfg & PIN_CFG_IEN))
 			return -EINVAL;
-
-		arg = rzg2l_read_pin_config(pctrl, IEN(port_offset),
-					    bit, IEN_MASK);
+		arg = rzg2l_read_pin_config(pctrl, IEN(port_offset), bit, IEN_MASK);
 		break;
 
 	case PIN_CONFIG_POWER_SOURCE: {
@@ -750,9 +745,9 @@ static int rzg2l_pinctrl_pinconf_set(struct pinctrl_dev *pctldev,
 	const struct pinctrl_pin_desc *pin = &pctrl->desc.pins[_pin];
 	unsigned int *pin_data = pin->drv_data;
 	enum pin_config_param param;
-	u32 port_offset;
 	unsigned long flags;
 	void __iomem *addr;
+	u32 port_offset;
 	unsigned int i;
 	u32 cfg = 0;
 	u8 bit = 0;
@@ -769,8 +764,7 @@ static int rzg2l_pinctrl_pinconf_set(struct pinctrl_dev *pctldev,
 		port_offset = RZG2L_PIN_ID_TO_PORT_OFFSET(_pin);
 		bit = RZG2L_PIN_ID_TO_PIN(_pin);
 
-		if (rzg2l_validate_gpio_pin(pctrl, *pin_data,
-					    RZG2L_PIN_ID_TO_PORT(_pin), bit))
+		if (rzg2l_validate_gpio_pin(pctrl, *pin_data, RZG2L_PIN_ID_TO_PORT(_pin), bit))
 			return -EINVAL;
 	}
 
@@ -784,8 +778,7 @@ static int rzg2l_pinctrl_pinconf_set(struct pinctrl_dev *pctldev,
 			if (!(cfg & PIN_CFG_IEN))
 				return -EINVAL;
 
-			rzg2l_rmw_pin_config(pctrl, IEN(port_offset),
-					     bit, IEN_MASK, !!arg);
+			rzg2l_rmw_pin_config(pctrl, IEN(port_offset), bit, IEN_MASK, !!arg);
 			break;
 		}
 
@@ -794,8 +787,7 @@ static int rzg2l_pinctrl_pinconf_set(struct pinctrl_dev *pctldev,
 			u32 pwr_reg = 0x0;
 
 			if (mV != 1800 && mV != 3300)
-				if (!((mV == 2500) &&
-				      (cfg & PIN_CFG_IO_VMC_ETH)))
+				if (!((mV == 2500) && (cfg & PIN_CFG_IO_VMC_ETH)))
 					return -EINVAL;
 
 			if (cfg & PIN_CFG_IO_VMC_SD0)
@@ -1673,13 +1665,6 @@ static int rzg2l_gpio_register(struct rzg2l_pinctrl *pctrl)
 	pctrl->gpio_range.npins = chip->ngpio;
 	pctrl->gpio_range.name = chip->label;
 	pctrl->gpio_range.gc = chip;
-	ret = devm_gpiochip_add_data(pctrl->dev, chip, pctrl);
-	if (ret) {
-		dev_err(pctrl->dev, "failed to add GPIO controller\n");
-		return ret;
-	}
-
-	dev_dbg(pctrl->dev, "Registered gpio controller\n");
 
 	irq_chip->name = dev_name(pctrl->dev);
 	irq_chip->irq_shutdown = rzg2l_gpio_irq_shutdown;
@@ -1696,6 +1681,14 @@ static int rzg2l_gpio_register(struct rzg2l_pinctrl *pctrl)
 	}
 
 	dev_dbg(pctrl->dev, "Registered interrupt controller\n");
+
+	ret = devm_gpiochip_add_data(pctrl->dev, chip, pctrl);
+	if (ret) {
+		dev_err(pctrl->dev, "failed to add GPIO controller\n");
+		return ret;
+	}
+
+	dev_dbg(pctrl->dev, "Registered gpio controller\n");
 
 	return 0;
 }

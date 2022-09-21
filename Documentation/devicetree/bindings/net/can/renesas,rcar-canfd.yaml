@@ -17,7 +17,8 @@ properties:
     oneOf:
       - items:
           - enum:
-              - renesas,r8a774a1-canfd     # RZ/G2M
+              - renesas,r8a774a1-canfd     # RZ/G2M v1.3
+              - renesas,r8a774a3-canfd     # RZ/G2M v3.0
               - renesas,r8a774b1-canfd     # RZ/G2N
               - renesas,r8a774c0-canfd     # RZ/G2E
               - renesas,r8a774e1-canfd     # RZ/G2H
@@ -38,10 +39,7 @@ properties:
   reg:
     maxItems: 1
 
-  interrupts:
-    items:
-      - description: Channel interrupt
-      - description: Global interrupt
+  interrupts: true
 
   clocks:
     maxItems: 3
@@ -55,8 +53,7 @@ properties:
   power-domains:
     maxItems: 1
 
-  resets:
-    maxItems: 1
+  resets: true
 
   renesas,no-can-fd:
     $ref: /schemas/types.yaml#/definitions/flag
