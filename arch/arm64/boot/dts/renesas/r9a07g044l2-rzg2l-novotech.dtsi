@@ -483,8 +483,8 @@
 	};
 
 	scif3_pins: scif3 {
-		pinmux = <RZG2L_PORT_PINMUX(0, 0, 1)>, /* TxD */
-			 <RZG2L_PORT_PINMUX(0, 1, 1)>; /* RxD */
+		pinmux = <RZG2L_PORT_PINMUX(0, 0, 5)>, /* TxD */
+			 <RZG2L_PORT_PINMUX(0, 1, 5)>; /* RxD */
 	};
 
 	gpt5_pins: gpt5 {
