@@ -20,7 +20,10 @@
 		i2c1 = &i2c1;
 		i2c3 = &i2c3;
 		serial0 = &scif0;
+		serial1 = &scif1;
 		serial2 = &scif2;
+		serial3 = &scif3;
+		serial4 = &scif4;
 		ethernet0 = &eth0;
 		ethernet1 = &eth1;
 	};
@@ -147,18 +150,6 @@
 		dais = <&ssi1>;
 	};
 
-	vccq_sdhi0: regulator-vccq-sdhi0 {
-		compatible = "regulator-gpio";
-
-		regulator-name = "SDHI0 VccQ";
-		regulator-min-microvolt = <1800000>;
-		regulator-max-microvolt = <3300000>;
-		states = <3300000 1>, <1800000 0>;
-		regulator-boot-on;
-		gpios = <&pinctrl RZG2L_GPIO(39, 0) GPIO_ACTIVE_HIGH>;
-		regulator-always-on;
-	};
-
 	vccq_sdhi1: regulator-vccq-sdhi1 {
 		compatible = "regulator-fixed";
 
@@ -197,6 +188,23 @@
 		#clock-cells = <0>;
 		clock-frequency = <24000000>;
 	};
+	
+	leds {
+		compatible = "gpio-leds";
+
+		led0 {
+			gpios = <&pinctrl RZG2L_GPIO(39, 0) GPIO_ACTIVE_HIGH>;
+			label = "LED0";
+			default-state = "off";
+		};
+		
+		led1 {
+			gpios = <&pinctrl RZG2L_GPIO(39, 1) GPIO_ACTIVE_HIGH>;
+			label = "LED1";
+			default-state = "on";
+		};
+	};
+
 };
 
 &audio_clk1 {
@@ -476,6 +484,11 @@
 		pinmux = <RZG2L_PORT_PINMUX(38, 0, 1)>,	/* TxD */
 			 <RZG2L_PORT_PINMUX(38, 1, 1)>;	/* RxD */
 	};
+	
+	scif1_pins: scif1 {
+		pinmux = <RZG2L_PORT_PINMUX(40, 0, 1)>, /* TxD */
+			 <RZG2L_PORT_PINMUX(40, 1, 1)>; /* RxD */
+	};
 
 	scif2_pins: scif2 {
 		pinmux = <RZG2L_PORT_PINMUX(48, 0, 1)>, /* TxD */
@@ -487,6 +500,11 @@
 	scif3_pins: scif3 {
 		pinmux = <RZG2L_PORT_PINMUX(0, 0, 5)>, /* TxD */
 			 <RZG2L_PORT_PINMUX(0, 1, 5)>; /* RxD */
+	};
+	
+	scif4_pins: scif4 {
+		pinmux = <RZG2L_PORT_PINMUX(2, 0, 5)>, /* TxD */
+			 <RZG2L_PORT_PINMUX(2, 1, 5)>; /* RxD */
 	};
 
 	gpt5_pins: gpt5 {
@@ -641,6 +659,12 @@
 	status = "okay";
 };
 
+&scif1 {
+	pinctrl-0 = <&scif1_pins>;
+	pinctrl-names = "default";
+	status = "okay";
+};
+
 &scif2 {
 	pinctrl-0 = <&scif2_pins>;
 	pinctrl-names = "default";
@@ -650,6 +674,12 @@
 
 &scif3 {
 	pinctrl-0 = <&scif3_pins>;
+	pinctrl-names = "default";
+	status = "okay";
+};
+
+&scif4 {
+	pinctrl-0 = <&scif4_pins>;
 	pinctrl-names = "default";
 	status = "okay";
 };
