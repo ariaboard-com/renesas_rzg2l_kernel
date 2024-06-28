@@ -193,13 +193,13 @@
 		compatible = "gpio-leds";
 
 		led0 {
-			gpios = <&pinctrl RZG2L_GPIO(39, 0) GPIO_ACTIVE_HIGH>;
+			gpios = <&pinctrl RZG2L_GPIO(39, 0) GPIO_ACTIVE_LOW>;
 			label = "LED0";
 			default-state = "off";
 		};
 		
 		led1 {
-			gpios = <&pinctrl RZG2L_GPIO(39, 1) GPIO_ACTIVE_HIGH>;
+			gpios = <&pinctrl RZG2L_GPIO(39, 1) GPIO_ACTIVE_LOW>;
 			label = "LED1";
 			default-state = "on";
 		};
