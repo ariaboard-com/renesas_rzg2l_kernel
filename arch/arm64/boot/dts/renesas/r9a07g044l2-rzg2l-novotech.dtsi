@@ -118,6 +118,12 @@
 		regulator-max-microvolt = <5000000>;
 	};
 
+	audio_mclock2: audio_mclock2 {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <12288000>;
+        };
+
 	snd_rzg2l: sound {
 		compatible = "simple-audio-card";
 		simple-audio-card,format = "i2s";
@@ -140,7 +146,7 @@
 
 		codec_dai: simple-audio-card,codec {
 			sound-dai = <&tlv320aic3106>;
-			clocks = <&versa3 0>;
+			clocks = <&audio_mclock2>;
 		};
 	};
 
@@ -328,7 +334,7 @@
 		reg = <0x76>;
 		
 		#sound-dai-cells = <0>;
-		clocks = <&versa3 3>;
+		clocks = <&audio_mclock>;
 
 		ports {
 			#address-cells = <1>;
