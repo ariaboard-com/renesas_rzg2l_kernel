@@ -11,7 +11,7 @@ fi
 
 KNAME="g2l"
 
-if [ x"$1" = x"mrprober" ]; then
+if [ x"$1" = x"mrproper" ]; then
    rm -rf "${WORKDIR}/build/${KNAME}" 2>/dev/null || true
 fi
 
@@ -29,6 +29,10 @@ make O="build/${KNAME}" renesas/r9a07g044l2-smarc.dtb
 make O="build/${KNAME}" renesas/r9a07g044l2-rzg2l-novotech.dtb
 make O="build/${KNAME}" renesas/r9a07g044l2-rzg2l-novotech2.dtb
 make O="build/${KNAME}" renesas/r9a07g044l2-rzg2l-novotech4.dtb
+
+make O="build/${KNAME}" renesas/r9a07g054l2-rzv2l-novotech.dtb
+make O="build/${KNAME}" renesas/r9a07g054l2-rzv2l-novotech2.dtb
+make O="build/${KNAME}" renesas/r9a07g054l2-rzv2l-novotech4.dtb
 
 rm -rf "deploy/${KNAME}" 2>/dev/null || true
 mkdir -p "deploy/${KNAME}"
