@@ -48,7 +48,7 @@ config DRM_RZG2L_MIPI_DSI
 	  Enable support for the RZG2L Display Unit embedded MIPI DSI encoders.
 
 config DRM_RCAR_VSP
-	bool "R-Car DU VSP Compositor Support" if ARM
+	bool "R-Car DU VSP Compositor Support" if ARM64
 	default y if ARM64
 	depends on DRM_RCAR_DU
 	depends on VIDEO_RENESAS_VSP1=y || (VIDEO_RENESAS_VSP1 && DRM_RCAR_DU=m)
